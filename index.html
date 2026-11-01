@@ -1,0 +1,722 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0E1013">
+<title>Aurea</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500&family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Instrument+Sans:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&display=swap">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}body{margin:0;font:14px system-ui,sans-serif}[hidden]{display:none!important}</style>
+</head>
+<body>
+<style>
+/* Layout: caderno de duas colunas (lista de notas + página de escrita), escuro por padrão, uma única cor de destaque discreta. */
+:root{
+  --font-ui:'Instrument Sans',system-ui,sans-serif;
+  --font-display:'Fraunces',Georgia,serif;
+  --font-hand:'Caveat',cursive;
+  --font-body:'Newsreader',Georgia,serif;
+  --bg:#0E1013;
+  --panel:#14171B;
+  --hover:#1B1F25;
+  --line:#23272E;
+  --ink:#E6E8EC;
+  --ink-2:#9AA1AE;
+  --accent:#9DBFAE;
+  --on-accent:#0E1013;
+  --size:19px;
+  --col:680px;
+  --leading:1.75;
+  color-scheme:dark;
+}
+:root[data-tema="carvao"]{--bg:#17171A;--panel:#1D1D21;--hover:#25252A;--line:#2D2D33;--ink:#ECE9E4;--ink-2:#A9A59E}
+:root[data-tema="claro"]{--bg:#F2F4F1;--panel:#E9ECE8;--hover:#E0E4DF;--line:#D6DBD6;--ink:#1F2A37;--ink-2:#566070;--on-accent:#FFFFFF;color-scheme:light}
+
+*,*::before,*::after{box-sizing:border-box}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--font-ui);font-size:15px;-webkit-text-size-adjust:100%}
+button{font:inherit;color:inherit;cursor:pointer}
+button:disabled{opacity:.4;cursor:default}
+button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.app{display:flex;height:100%;min-width:0}
+
+/* Lista de notas */
+.side{width:288px;flex:none;min-height:0;display:flex;flex-direction:column;gap:14px;background:var(--panel);border-right:1px solid var(--line);padding:18px 14px 14px;--cut:var(--panel)}
+.brand{display:flex;align-items:center;gap:10px;padding:2px 6px 4px;color:var(--ink)}
+.brand span{font-family:var(--font-display);font-weight:600;font-size:25px;letter-spacing:-.02em}
+.search{height:42px;width:100%;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:12px;padding:0 14px;font:inherit}
+.search::placeholder{color:var(--ink-2);opacity:1}
+.primary{height:44px;border:0;border-radius:999px;background:var(--accent);color:var(--on-accent);font-weight:600;padding:0 20px}
+.list{flex:1;min-height:0;overflow-y:auto;list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px}
+.item{width:100%;display:flex;align-items:center;gap:12px;text-align:left;border:0;border-radius:12px;background:transparent;padding:8px}
+.item:hover{background:var(--hover)}
+.item[aria-current="true"]{background:var(--bg);box-shadow:0 0 0 1px var(--line)}
+.seal{width:38px;height:38px;flex:none;border-radius:11px;background:var(--bg);color:var(--accent);display:grid;place-items:center}
+.item[aria-current="true"] .seal{background:var(--panel)}
+.t{min-width:0;display:flex;flex-direction:column;gap:2px}
+.t b{font-weight:600;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.t i{font-style:normal;font-size:12.5px;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.none{color:var(--ink-2);font-size:14px;padding:12px 8px}
+.side-foot{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.ghost{height:40px;border:1px solid var(--line);background:transparent;color:var(--ink);border-radius:999px;padding:0 16px;font-size:14px}
+.ghost:hover{background:var(--hover)}
+.count{font-size:12.5px;color:var(--ink-2)}
+
+/* Página */
+.main{flex:1;min-width:0;position:relative;display:flex;flex-direction:column;overflow:hidden}
+.art{position:absolute;top:0;right:0;width:340px;height:340px;pointer-events:none;z-index:0}
+.art circle{fill:var(--accent)}
+.bar{position:relative;z-index:1;display:flex;align-items:center;gap:8px;padding:10px 14px}
+.bar-mid{flex:1;min-width:0;padding-left:6px;font-size:13px;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.icon{width:44px;height:44px;flex:none;display:grid;place-items:center;border:0;background:transparent;border-radius:12px}
+.icon:hover:not(:disabled){background:var(--hover)}
+.seg{display:inline-flex;gap:2px;padding:3px;border:1px solid var(--line);border-radius:999px;flex-wrap:wrap}
+.seg button{height:36px;padding:0 15px;border:0;border-radius:999px;background:transparent;color:var(--ink-2);font-size:14px}
+.seg button:hover{color:var(--ink)}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--on-accent);font-weight:600}
+.stage{position:relative;z-index:1;flex:1;min-height:0;overflow-y:auto}
+.doc{width:100%;max-width:calc(var(--col) + 80px);margin:0 auto;padding:28px clamp(20px,5vw,40px) 160px}
+.date{font-family:var(--font-hand);font-size:24px;line-height:1.1;color:var(--accent)}
+.title{display:block;width:100%;border:0;background:transparent;color:var(--ink);font-family:var(--font-display);font-weight:600;font-size:clamp(32px,6vw,46px);line-height:1.1;letter-spacing:-.02em;padding:4px 0 18px;outline:none}
+.title::placeholder{color:var(--ink-2);opacity:1}
+.body,.read{font-family:var(--font-body);font-size:var(--size);line-height:var(--leading)}
+.body{display:block;width:100%;min-height:50vh;border:0;background:transparent;color:var(--ink);resize:none;overflow:hidden;padding:0;margin:0;outline:none;caret-color:var(--accent)}
+.body::placeholder{color:var(--ink-2);opacity:1}
+.meta{margin-top:28px;font-size:12.5px;color:var(--ink-2)}
+.read{min-height:50vh}
+.read>*:first-child{margin-top:0}
+.read p{margin:0 0 1em}
+.read h1,.read h2,.read h3{font-family:var(--font-display);font-weight:600;letter-spacing:-.01em;line-height:1.2;margin:1.6em 0 .5em}
+.read h1{font-size:1.9em}.read h2{font-size:1.5em}.read h3{font-size:1.2em}
+.read ul,.read ol{margin:0 0 1em;padding-left:1.4em}
+.read li{margin:.25em 0}
+.read li.task{list-style:none;margin-left:-1.4em;display:flex;gap:.7em;align-items:baseline}
+.read li.task input{width:1.05em;height:1.05em;accent-color:var(--accent);flex:none;transform:translateY(.12em)}
+.read li.done span{color:var(--ink-2);text-decoration:line-through}
+.read blockquote{margin:1.4em 0;font-family:var(--font-display);font-style:italic;font-size:1.35em;line-height:1.4;color:var(--ink)}
+.read code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.82em;background:var(--hover);border-radius:6px;padding:.12em .5em}
+.read pre{margin:0 0 1em;padding:14px 16px;background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow-x:auto}
+.read pre code{background:none;padding:0}
+.read hr{border:0;border-top:1px solid var(--line);margin:2em 0}
+.read a{color:var(--accent);text-underline-offset:3px}
+.read mark{background:color-mix(in srgb,var(--accent) 30%,transparent);color:inherit;border-radius:3px;padding:0 .12em}
+.soft{color:var(--ink-2)}
+
+.empty{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;padding:24px;--cut:var(--bg);color:var(--ink)}
+.empty h2{margin:6px 0 0;font-family:var(--font-display);font-weight:600;font-size:28px;letter-spacing:-.01em}
+.empty p{margin:0;color:var(--ink-2);max-width:32ch;line-height:1.5}
+
+/* Aparência */
+.dlg{width:min(92vw,460px);max-height:88vh;padding:0;border:1px solid var(--line);border-radius:20px;background:var(--panel);color:var(--ink)}
+.dlg::backdrop{background:rgba(0,0,0,.55)}
+.dlg-in{display:flex;flex-direction:column;gap:20px;padding:20px 22px 22px;max-height:88vh;overflow-y:auto}
+.dlg-head{display:flex;align-items:center;justify-content:space-between}
+.dlg-head h2{margin:0;font-family:var(--font-display);font-weight:600;font-size:24px;letter-spacing:-.01em}
+.row{display:flex;flex-direction:column;gap:9px}
+.lab{font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-2)}
+.swatches{display:flex;gap:12px}
+.sw{width:36px;height:36px;border-radius:50%;border:0;box-shadow:inset 0 0 0 1px rgba(255,255,255,.12)}
+.sw[aria-pressed="true"]{box-shadow:0 0 0 2px var(--panel),0 0 0 4px var(--ink)}
+.sw[data-v="salvia"]{background:#9DBFAE}.sw[data-v="rosa"]{background:#D99AA6}.sw[data-v="lilas"]{background:#A99BD6}.sw[data-v="areia"]{background:#CDBA94}.sw[data-v="nevoa"]{background:#B9BFC9}
+input[type="range"]{width:100%;accent-color:var(--accent);height:28px}
+.btns{display:flex;flex-wrap:wrap;gap:8px}
+.hint{margin:0;font-size:13px;line-height:1.5;color:var(--ink-2)}
+
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:50;display:flex;align-items:center;gap:14px;max-width:min(92vw,520px);padding:10px 12px 10px 18px;background:var(--panel);border:1px solid var(--line);border-radius:999px;box-shadow:0 10px 30px rgba(0,0,0,.35);font-size:14px}
+.toast button{height:34px;padding:0 14px;border:0;border-radius:999px;background:var(--accent);color:var(--on-accent);font-weight:600}
+
+.scrim{display:none}
+@media (max-width:860px){
+  .side{position:fixed;top:0;bottom:0;left:0;z-index:30;width:min(86vw,330px);padding-top:calc(18px + env(safe-area-inset-top,0px));padding-bottom:calc(14px + env(safe-area-inset-bottom,0px));transform:translateX(-102%);transition:transform .2s ease}
+  .app[data-sidebar="open"] .side{transform:none}
+  .app[data-sidebar="open"] .scrim{display:block;position:fixed;inset:0;z-index:20;background:rgba(0,0,0,.5)}
+  .art{width:220px;height:220px}
+  .bar-mid{display:none}
+  .bar{justify-content:space-between}
+}
+@media (min-width:861px){
+  .app[data-sidebar="closed"] .side{display:none}
+}
+@media (pointer:coarse){
+  .seg button{height:40px}
+}
+@media (prefers-reduced-motion:reduce){
+  .side{transition:none}
+}
+</style>
+
+<div id="app" class="app" data-sidebar="open">
+  <aside id="side" class="side" aria-label="Suas notas">
+    <div class="brand">
+      <svg width="28" height="28" viewBox="0 0 64 64" aria-hidden="true"><path d="M32 6C32 6 14 28 14 40a18 18 0 0 0 36 0C50 28 32 6 32 6z" fill="currentColor"/><path d="M32 30v14" fill="none" stroke-width="3" stroke-linecap="round" style="stroke:var(--cut)"/><circle cx="32" cy="36" r="3" style="fill:var(--cut)"/></svg>
+      <span>Aurea</span>
+    </div>
+    <input id="q" class="search" type="search" placeholder="Buscar nas notas" aria-label="Buscar nas notas" autocomplete="off" title="Buscar (Ctrl+K)">
+    <button id="new" type="button" class="primary" title="Nova nota (Alt+N)">+ Nova nota</button>
+    <ul id="list" class="list"></ul>
+    <div class="side-foot">
+      <button id="open-set" type="button" class="ghost">Aparência e dados</button>
+      <span id="count" class="count"></span>
+    </div>
+  </aside>
+  <div id="scrim" class="scrim"></div>
+
+  <main class="main">
+    <svg class="art" viewBox="0 0 340 340" aria-hidden="true"><circle cx="340" cy="0" r="300" opacity=".05"/><circle cx="340" cy="0" r="205" opacity=".07"/><circle cx="340" cy="0" r="110" opacity=".1"/></svg>
+    <header class="bar">
+      <button id="toggle-side" type="button" class="icon" aria-label="Mostrar ou ocultar a lista de notas">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h10"/></svg>
+      </button>
+      <div id="status" class="bar-mid" role="status"></div>
+      <div class="seg" role="group" aria-label="Modo da nota">
+        <button id="m-write" type="button" aria-pressed="true" title="Escrever (Alt+E alterna)">Escrever</button>
+        <button id="m-read" type="button" aria-pressed="false" title="Ler (Alt+E alterna)">Ler</button>
+      </div>
+      <button id="del" type="button" class="icon" aria-label="Excluir nota">
+        <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg>
+      </button>
+    </header>
+
+    <div id="stage" class="stage">
+      <article id="doc" class="doc">
+        <div id="date" class="date"></div>
+        <input id="title" class="title" type="text" placeholder="Sem título" aria-label="Título da nota" autocomplete="off">
+        <textarea id="body" class="body" placeholder="Comece a escrever…" aria-label="Texto da nota" spellcheck="true"></textarea>
+        <div id="read" class="read" hidden></div>
+        <div id="meta" class="meta"></div>
+      </article>
+      <div id="empty" class="empty" hidden>
+        <svg width="56" height="56" viewBox="0 0 64 64" aria-hidden="true"><path d="M32 6C32 6 14 28 14 40a18 18 0 0 0 36 0C50 28 32 6 32 6z" fill="currentColor"/><path d="M32 30v14" fill="none" stroke-width="3" stroke-linecap="round" style="stroke:var(--cut)"/><circle cx="32" cy="36" r="3" style="fill:var(--cut)"/></svg>
+        <h2>Nenhuma nota aberta</h2>
+        <p>Escolha uma nota na lista ou comece uma nova.</p>
+        <button id="empty-new" type="button" class="primary">Escrever uma nota</button>
+      </div>
+    </div>
+  </main>
+</div>
+
+<dialog id="dlg" class="dlg" aria-labelledby="dlg-t">
+  <div class="dlg-in">
+    <div class="dlg-head">
+      <h2 id="dlg-t">Aparência e dados</h2>
+      <button id="dlg-x" type="button" class="icon" aria-label="Fechar">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+    <div class="row">
+      <div class="lab" id="l-tema">Tema</div>
+      <div class="seg" data-key="tema" role="group" aria-labelledby="l-tema">
+        <button type="button" data-v="noite">Noite</button><button type="button" data-v="carvao">Carvão</button><button type="button" data-v="claro">Claro</button>
+      </div>
+    </div>
+    <div class="row">
+      <div class="lab" id="l-cor">Cor de destaque</div>
+      <div class="swatches" data-key="cor" role="group" aria-labelledby="l-cor">
+        <button type="button" class="sw" data-v="salvia" aria-label="Sálvia"></button>
+        <button type="button" class="sw" data-v="rosa" aria-label="Rosa"></button>
+        <button type="button" class="sw" data-v="lilas" aria-label="Lilás"></button>
+        <button type="button" class="sw" data-v="areia" aria-label="Areia"></button>
+        <button type="button" class="sw" data-v="nevoa" aria-label="Névoa"></button>
+      </div>
+    </div>
+    <div class="row">
+      <div class="lab" id="l-fonte">Fonte do texto</div>
+      <div class="seg" data-key="fonte" role="group" aria-labelledby="l-fonte">
+        <button type="button" data-v="serifa">Serifa</button><button type="button" data-v="sans">Sem serifa</button><button type="button" data-v="mono">Mono</button>
+      </div>
+    </div>
+    <div class="row">
+      <label class="lab" for="r-size">Tamanho do texto · <span id="v-size"></span></label>
+      <input id="r-size" type="range" min="16" max="24" step="1">
+    </div>
+    <div class="row">
+      <div class="lab" id="l-larg">Largura da coluna</div>
+      <div class="seg" data-key="largura" role="group" aria-labelledby="l-larg">
+        <button type="button" data-v="560">Estreita</button><button type="button" data-v="680">Média</button><button type="button" data-v="820">Larga</button>
+      </div>
+    </div>
+    <div class="row">
+      <div class="lab">Suas notas</div>
+      <div class="btns">
+        <button id="b-exp" type="button" class="ghost">Exportar tudo</button>
+        <button id="b-imp" type="button" class="ghost">Importar</button>
+        <button id="b-md" type="button" class="ghost">Baixar nota (.md)</button>
+        <button id="b-inst" type="button" class="ghost" hidden>Instalar app</button>
+      </div>
+      <input id="f-imp" type="file" accept=".json,.md,.txt,text/plain,application/json" hidden>
+      <p class="hint">As notas ficam guardadas neste navegador, neste aparelho. Exporte de vez em quando para ter uma cópia.</p>
+    </div>
+  </div>
+</dialog>
+
+<div id="toast" class="toast" hidden></div>
+
+<script>
+/*MD-START*/
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function inline(s){
+  s=esc(s);
+  var codes=[];
+  s=s.replace(/`([^`]+)`/g,function(m,c){codes.push(c);return '\u0000'+(codes.length-1)+'\u0000';});
+  s=s.replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>');
+  s=s.replace(/(^|[^*])\*([^*\s][^*]*)\*/g,'$1<em>$2</em>');
+  s=s.replace(/~~([^~]+)~~/g,'<del>$1</del>');
+  s=s.replace(/==([^=]+)==/g,'<mark>$1</mark>');
+  s=s.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+|mailto:[^\s)]+)\)/g,function(m,t,u){return '<a href="'+u+'" target="_blank" rel="noopener noreferrer">'+t+'</a>';});
+  s=s.replace(/\u0000(\d+)\u0000/g,function(m,i){return '<code>'+codes[i]+'</code>';});
+  return s;
+}
+function renderMarkdown(md){
+  var L=String(md).replace(/\r/g,'').split('\n'), out=[], i=0, m;
+  var LI=/^\s*([-*+]|\d+\.)\s+/;
+  while(i<L.length){
+    var line=L[i];
+    if(/^\s*$/.test(line)){i++;continue;}
+    if(/^```/.test(line)){
+      var code=[];i++;
+      while(i<L.length&&!/^```/.test(L[i])){code.push(L[i]);i++;}
+      i++;
+      out.push('<pre><code>'+esc(code.join('\n'))+'</code></pre>');continue;
+    }
+    if((m=line.match(/^(#{1,3})\s+(.*)$/))){out.push('<h'+m[1].length+'>'+inline(m[2])+'</h'+m[1].length+'>');i++;continue;}
+    if(/^\s*([-*_])(\s*\1){2,}\s*$/.test(line)){out.push('<hr>');i++;continue;}
+    if(/^>\s?/.test(line)){
+      var q=[];
+      while(i<L.length&&/^>\s?/.test(L[i])){q.push(L[i].replace(/^>\s?/,''));i++;}
+      out.push('<blockquote>'+q.map(inline).join('<br>')+'</blockquote>');continue;
+    }
+    if(LI.test(line)){
+      var ordered=/^\s*\d+\./.test(line), items=[];
+      while(i<L.length&&LI.test(L[i])){
+        var t=L[i].replace(LI,''), tm=t.match(/^\[( |x|X)\]\s+(.*)$/);
+        if(tm){
+          var done=tm[1]!==' ';
+          items.push('<li class="task'+(done?' done':'')+'"><input type="checkbox" data-line="'+i+'"'+(done?' checked':'')+' aria-label="Marcar tarefa"><span>'+inline(tm[2])+'</span></li>');
+        }else{items.push('<li>'+inline(t)+'</li>');}
+        i++;
+      }
+      out.push((ordered?'<ol>':'<ul>')+items.join('')+(ordered?'</ol>':'</ul>'));continue;
+    }
+    var p=[];
+    while(i<L.length&&!/^\s*$/.test(L[i])&&!/^(```|#{1,3}\s|>\s?)/.test(L[i])&&!LI.test(L[i])){p.push(L[i]);i++;}
+    if(!p.length){p.push(L[i]);i++;}
+    out.push('<p>'+p.map(inline).join('<br>')+'</p>');
+  }
+  return out.join('\n');
+}
+/* Continua listas ao apertar Enter. Devolve {from,to,text} ou null. */
+function continueList(v,pos){
+  var start=v.lastIndexOf('\n',pos-1)+1, line=v.slice(start,pos);
+  var m=line.match(/^(\s*)([-*+]|\d+\.)(\s+)(\[( |x|X)\]\s+)?(.*)$/);
+  if(!m) return null;
+  if(m[6]==='') return {from:start,to:pos,text:''};
+  var marker=/\d/.test(m[2])?(parseInt(m[2],10)+1)+'.':m[2];
+  return {from:pos,to:pos,text:'\n'+m[1]+marker+m[3]+(m[4]?'[ ] ':'')};
+}
+/*MD-END*/
+
+(function(){
+'use strict';
+var $=function(id){return document.getElementById(id);};
+var KEY='aurea.v1';
+var ACCENTS={salvia:{d:'#9DBFAE',l:'#3F6B57'},rosa:{d:'#D99AA6',l:'#A5405A'},lilas:{d:'#A99BD6',l:'#6A56A8'},areia:{d:'#CDBA94',l:'#7A6532'},nevoa:{d:'#B9BFC9',l:'#4A5260'}};
+var FONTS={serifa:"'Newsreader',Georgia,serif",sans:"'Instrument Sans',system-ui,sans-serif",mono:"ui-monospace,'SF Mono',Menlo,Consolas,monospace"};
+var DEFAULTS={tema:'noite',cor:'salvia',fonte:'serifa',tamanho:19,largura:680};
+var SEALS=[
+ '<path d="M2 16a13 13 0 0 1 26 0z" fill="currentColor"/><circle cx="15" cy="16" r="13" fill="none" stroke="currentColor" stroke-width="1.6" opacity=".5"/>',
+ '<circle cx="12" cy="18" r="8" fill="currentColor" opacity=".9"/><circle cx="21" cy="10" r="5" fill="currentColor" opacity=".45"/>',
+ '<g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 26A8 8 0 0 0 4 18"/><path d="M19 26A15 15 0 0 0 4 11" opacity=".65"/><path d="M26 26A22 22 0 0 0 4 4" opacity=".35"/></g>',
+ '<circle cx="15" cy="15" r="11" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="15" cy="15" r="5" fill="currentColor" opacity=".7"/>'
+];
+
+var app=$('app'), q=$('q'), list=$('list'), title=$('title'), body=$('body'), read=$('read'), stage=$('stage'), dlg=$('dlg'), toastEl=$('toast');
+var storageOk=true, mode='write', undoBuf=null, saveT=0, toastT=0, deferredInstall=null;
+
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
+function norm(s){return String(s).normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();}
+function isMobile(){return window.matchMedia('(max-width:860px)').matches;}
+function validNote(n){return !!n&&typeof n==='object'&&typeof n.title==='string'&&typeof n.body==='string';}
+function cleanNote(n){
+  var id=String(n.id||'').replace(/[^\w-]/g,'').slice(0,40)||uid();
+  return {id:id,title:n.title,body:n.body,created:+n.created||Date.now(),updated:+n.updated||Date.now()};
+}
+function welcome(){
+  var now=Date.now();
+  return {id:uid(),created:now,updated:now,title:'Bem-vindo ao Aurea',body:[
+    'O Aurea é um caderno simples e silencioso. Suas notas ficam neste navegador.',
+    '',
+    '## O básico',
+    '',
+    '- Escreva em **markdown**: ==marca-texto==, *itálico* e `código`',
+    '- Alterne entre **Escrever** e **Ler** no topo (Alt+E)',
+    '- Crie uma nota com Alt+N e busque com Ctrl+K',
+    '',
+    '## Tarefas',
+    '',
+    '- [x] Abrir o Aurea',
+    '- [ ] Escrever a primeira nota',
+    '- [ ] Ajustar a aparência no rodapé da lista',
+    '',
+    '> Escrever é pensar com as mãos.'
+  ].join('\n')};
+}
+function load(){
+  try{
+    var raw=localStorage.getItem(KEY);
+    if(raw){
+      var d=JSON.parse(raw);
+      if(d&&Array.isArray(d.notes)){
+        return {notes:d.notes.filter(validNote).map(cleanNote),settings:Object.assign({},DEFAULTS,d.settings||{}),current:d.current||null};
+      }
+    }
+  }catch(e){storageOk=false;}
+  var w=welcome();
+  return {notes:[w],settings:Object.assign({},DEFAULTS),current:w.id};
+}
+var data=load();
+function cur(){for(var i=0;i<data.notes.length;i++){if(data.notes[i].id===data.current)return data.notes[i];}return null;}
+function sorted(){return data.notes.slice().sort(function(a,b){return b.updated-a.updated;});}
+
+/* Armazenamento */
+function write(){
+  try{
+    localStorage.setItem(KEY,JSON.stringify({notes:data.notes,settings:data.settings,current:data.current}));
+    return true;
+  }catch(e){storageOk=false;return false;}
+}
+function setStatus(t){$('status').textContent=t;}
+function persist(now){
+  clearTimeout(saveT);
+  setStatus('Salvando…');
+  var run=function(){
+    if(write()){setStatus('Salvo');}
+    else{setStatus('Sem armazenamento neste navegador. Exporte suas notas para não perdê-las.');}
+    renderList();
+    $('count').textContent=data.notes.length+(data.notes.length===1?' nota':' notas');
+  };
+  if(now){run();}else{saveT=setTimeout(run,350);}
+}
+window.addEventListener('pagehide',function(){clearTimeout(saveT);write();});
+
+/* Datas */
+function dayLabel(ts){
+  var d=new Date(ts), t=new Date(), y=new Date();
+  y.setDate(t.getDate()-1);
+  if(d.toDateString()===t.toDateString())return 'hoje';
+  if(d.toDateString()===y.toDateString())return 'ontem';
+  return d.toLocaleDateString('pt-BR',{day:'numeric',month:'short'});
+}
+function longDate(ts){return new Date(ts).toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'});}
+function previewText(n){
+  var lines=n.body.split('\n');
+  for(var i=0;i<lines.length;i++){
+    var l=lines[i].replace(/^\s*(#{1,3}\s+|[-*+]\s+(\[( |x|X)\]\s+)?|\d+\.\s+|>\s?)/,'').replace(/[*_`=~]/g,'').trim();
+    if(l)return l.slice(0,70);
+  }
+  return 'Nota vazia';
+}
+
+/* Lista */
+function seal(id){
+  var h=0;
+  for(var i=0;i<id.length;i++){h=(h*31+id.charCodeAt(i))>>>0;}
+  return '<svg viewBox="0 0 30 30" width="26" height="26" aria-hidden="true">'+SEALS[h%SEALS.length]+'</svg>';
+}
+function renderList(){
+  var term=norm(q.value.trim());
+  var notes=sorted().filter(function(n){return !term||norm(n.title+' '+n.body).indexOf(term)!==-1;});
+  if(!notes.length){list.innerHTML='<li class="none">'+(term?'Nada encontrado.':'Nenhuma nota ainda.')+'</li>';return;}
+  list.innerHTML=notes.map(function(n){
+    return '<li><button type="button" class="item" data-id="'+esc(n.id)+'" aria-current="'+(n.id===data.current)+'">'+
+      '<span class="seal">'+seal(n.id)+'</span>'+
+      '<span class="t"><b>'+esc(n.title||'Sem título')+'</b><i>'+esc(dayLabel(n.updated)+' · '+previewText(n))+'</i></span></button></li>';
+  }).join('');
+}
+list.addEventListener('click',function(e){
+  var b=e.target.closest('.item');
+  if(b)select(b.dataset.id);
+});
+q.addEventListener('input',renderList);
+
+/* Página */
+function fit(){
+  if(body.hidden)return;
+  body.style.height='auto';
+  body.style.height=body.scrollHeight+'px';
+}
+function updateMeta(){
+  var words=(body.value.trim().match(/\S+/g)||[]).length;
+  $('meta').textContent=words+(words===1?' palavra':' palavras')+(words>=200?' · '+Math.ceil(words/200)+' min de leitura':'');
+}
+function setMode(m,quiet){
+  mode=m;
+  $('m-write').setAttribute('aria-pressed',String(m==='write'));
+  $('m-read').setAttribute('aria-pressed',String(m==='read'));
+  body.hidden=(m==='read');
+  read.hidden=(m!=='read');
+  if(m==='read'){
+    read.innerHTML=body.value.trim()?renderMarkdown(body.value):'<p class="soft">Nada para ler ainda.</p>';
+  }else{
+    fit();
+    if(!quiet)body.focus();
+  }
+}
+function showNote(){
+  var n=cur(), has=!!n;
+  $('doc').hidden=!has;
+  $('empty').hidden=has;
+  $('del').disabled=!has;
+  $('m-write').disabled=!has;
+  $('m-read').disabled=!has;
+  if(has){
+    title.value=n.title;
+    body.value=n.body;
+    $('date').textContent=longDate(n.created);
+    setMode(mode,true);
+    updateMeta();
+    stage.scrollTop=0;
+  }
+  renderList();
+}
+function select(id){
+  data.current=id;
+  persist(true);
+  showNote();
+  if(isMobile())closeSide();
+}
+function newNote(){
+  var c=cur();
+  if(c&&!c.title&&!c.body){mode='write';showNote();title.focus();return;}
+  var now=Date.now(), n={id:uid(),title:'',body:'',created:now,updated:now};
+  data.notes.unshift(n);
+  data.current=n.id;
+  q.value='';
+  mode='write';
+  persist(true);
+  showNote();
+  title.focus();
+  if(isMobile())closeSide();
+}
+function removeNote(){
+  var n=cur();
+  if(!n)return;
+  var idx=data.notes.indexOf(n);
+  data.notes.splice(idx,1);
+  undoBuf={n:n,idx:idx};
+  var s=sorted();
+  data.current=s.length?s[0].id:null;
+  persist(true);
+  showNote();
+  toast('Nota excluída','Desfazer',undo);
+}
+function undo(){
+  if(!undoBuf)return;
+  data.notes.splice(Math.min(undoBuf.idx,data.notes.length),0,undoBuf.n);
+  data.current=undoBuf.n.id;
+  undoBuf=null;
+  persist(true);
+  showNote();
+  hideToast();
+}
+function toast(msg,label,fn){
+  clearTimeout(toastT);
+  toastEl.textContent='';
+  var s=document.createElement('span');
+  s.textContent=msg;
+  toastEl.appendChild(s);
+  if(label){
+    var b=document.createElement('button');
+    b.type='button';
+    b.textContent=label;
+    b.addEventListener('click',fn);
+    toastEl.appendChild(b);
+  }
+  toastEl.hidden=false;
+  toastT=setTimeout(hideToast,label?8000:3500);
+}
+function hideToast(){toastEl.hidden=true;undoBuf=null;}
+
+title.addEventListener('input',function(){
+  var n=cur();if(!n)return;
+  n.title=title.value;n.updated=Date.now();persist();
+});
+title.addEventListener('keydown',function(e){
+  if(e.key==='Enter'){e.preventDefault();setMode('write');body.focus();}
+});
+body.addEventListener('input',function(){
+  var n=cur();if(!n)return;
+  n.body=body.value;n.updated=Date.now();fit();updateMeta();persist();
+});
+body.addEventListener('keydown',function(e){
+  if(e.key!=='Enter'||e.shiftKey||e.isComposing||body.selectionStart!==body.selectionEnd)return;
+  var r=continueList(body.value,body.selectionStart);
+  if(!r)return;
+  e.preventDefault();
+  body.focus();
+  body.setSelectionRange(r.from,r.to);
+  var ok=false;
+  try{ok=document.execCommand('insertText',false,r.text);}catch(_){ok=false;}
+  if(!ok){body.setRangeText(r.text,r.from,r.to,'end');body.dispatchEvent(new Event('input',{bubbles:true}));}
+});
+read.addEventListener('change',function(e){
+  var c=e.target, n=cur();
+  if(!n||!c||!c.dataset||c.dataset.line===undefined)return;
+  var lines=n.body.split('\n'), i=+c.dataset.line;
+  if(lines[i]===undefined)return;
+  lines[i]=lines[i].replace(/\[( |x|X)\]/,c.checked?'[x]':'[ ]');
+  n.body=lines.join('\n');
+  body.value=n.body;
+  n.updated=Date.now();
+  persist();
+  var y=stage.scrollTop;
+  read.innerHTML=renderMarkdown(n.body);
+  stage.scrollTop=y;
+});
+
+$('new').addEventListener('click',newNote);
+$('empty-new').addEventListener('click',newNote);
+$('del').addEventListener('click',removeNote);
+$('m-write').addEventListener('click',function(){setMode('write');});
+$('m-read').addEventListener('click',function(){setMode('read');});
+
+/* Barra lateral */
+function openSide(){app.dataset.sidebar='open';}
+function closeSide(){app.dataset.sidebar='closed';}
+$('toggle-side').addEventListener('click',function(){
+  if(app.dataset.sidebar==='open')closeSide();else openSide();
+});
+$('scrim').addEventListener('click',closeSide);
+app.dataset.sidebar=isMobile()?'closed':'open';
+
+/* Atalhos */
+document.addEventListener('keydown',function(e){
+  if((e.ctrlKey||e.metaKey)&&e.code==='KeyK'){e.preventDefault();openSide();q.focus();q.select();}
+  else if(e.altKey&&e.code==='KeyN'){e.preventDefault();newNote();}
+  else if(e.altKey&&e.code==='KeyE'){e.preventDefault();if(cur())setMode(mode==='write'?'read':'write');}
+});
+
+/* Aparência */
+function applySettings(){
+  var s=data.settings, r=document.documentElement, light=s.tema==='claro';
+  var a=ACCENTS[s.cor]||ACCENTS.salvia;
+  r.setAttribute('data-tema',s.tema);
+  r.style.setProperty('--accent',light?a.l:a.d);
+  r.style.setProperty('--size',s.tamanho+'px');
+  r.style.setProperty('--col',s.largura+'px');
+  r.style.setProperty('--font-body',FONTS[s.fonte]||FONTS.serifa);
+  var meta=document.querySelector('meta[name="theme-color"]');
+  if(meta)meta.setAttribute('content',{noite:'#0E1013',carvao:'#17171A',claro:'#F2F4F1'}[s.tema]||'#0E1013');
+}
+function syncDialog(){
+  var groups=dlg.querySelectorAll('[data-key]');
+  for(var g=0;g<groups.length;g++){
+    var key=groups[g].dataset.key, bs=groups[g].querySelectorAll('button');
+    for(var i=0;i<bs.length;i++){bs[i].setAttribute('aria-pressed',String(bs[i].dataset.v===String(data.settings[key])));}
+  }
+  $('r-size').value=data.settings.tamanho;
+  $('v-size').textContent=data.settings.tamanho+' px';
+}
+$('open-set').addEventListener('click',function(){syncDialog();dlg.showModal();});
+$('dlg-x').addEventListener('click',function(){dlg.close();});
+dlg.addEventListener('click',function(e){
+  if(e.target===dlg){dlg.close();return;}
+  var b=e.target.closest('[data-key] button');
+  if(!b)return;
+  var key=b.closest('[data-key]').dataset.key;
+  data.settings[key]=(key==='largura')?+b.dataset.v:b.dataset.v;
+  applySettings();syncDialog();fit();persist();
+});
+$('r-size').addEventListener('input',function(e){
+  data.settings.tamanho=+e.target.value;
+  applySettings();syncDialog();fit();persist();
+});
+
+/* Arquivos */
+function slug(s){return norm(s).replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,60)||'nota';}
+function today(){return new Date().toLocaleDateString('sv-SE');}
+async function saveFile(name,text){
+  try{
+    if(window.claude&&window.claude.use){
+      var d=await window.claude.use('downloads');
+      if(d){await d.save({filename:name,data:text});toast('Arquivo salvo');return;}
+    }
+  }catch(err){
+    if(err&&err.code==='declined')return;
+  }
+  var blob=new Blob([text],{type:'text/plain;charset=utf-8'});
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);a.download=name;
+  document.body.appendChild(a);a.click();a.remove();
+  setTimeout(function(){URL.revokeObjectURL(a.href);},4000);
+}
+$('b-exp').addEventListener('click',function(){
+  saveFile('aurea-notas-'+today()+'.json',JSON.stringify({app:'aurea',version:1,exported:new Date().toISOString(),notes:data.notes,settings:data.settings},null,2));
+});
+$('b-md').addEventListener('click',function(){
+  var n=cur();
+  if(!n){toast('Abra uma nota primeiro.');return;}
+  saveFile(slug(n.title)+'.md',(n.title?'# '+n.title+'\n\n':'')+n.body);
+});
+$('b-imp').addEventListener('click',function(){$('f-imp').click();});
+$('f-imp').addEventListener('change',async function(e){
+  var f=e.target.files[0];
+  e.target.value='';
+  if(!f)return;
+  if(f.size>10*1024*1024){toast('Arquivo grande demais (máximo 10 MB).');return;}
+  var text;
+  try{text=await f.text();}catch(_){toast('Não foi possível ler o arquivo.');return;}
+  if(/\.json$/i.test(f.name)){
+    try{
+      var d=JSON.parse(text), incoming=Array.isArray(d)?d:d.notes;
+      if(!Array.isArray(incoming))throw new Error('formato');
+      var added=0;
+      incoming.filter(validNote).map(cleanNote).forEach(function(n){
+        var ex=data.notes.filter(function(x){return x.id===n.id;})[0];
+        if(!ex){data.notes.push(n);added++;}
+        else if(n.updated>ex.updated){Object.assign(ex,n);added++;}
+      });
+      if(!cur()&&data.notes.length)data.current=sorted()[0].id;
+      persist(true);showNote();
+      toast(added+(added===1?' nota importada':' notas importadas'));
+    }catch(_){toast('Esse arquivo não parece um backup do Aurea.');return;}
+  }else{
+    var now=Date.now(), n2={id:uid(),title:f.name.replace(/\.[^.]+$/,''),body:text,created:now,updated:now};
+    data.notes.unshift(n2);data.current=n2.id;
+    persist(true);showNote();toast('Nota importada');
+  }
+  dlg.close();
+});
+
+/* Instalação */
+window.addEventListener('beforeinstallprompt',function(e){
+  e.preventDefault();deferredInstall=e;$('b-inst').hidden=false;
+});
+$('b-inst').addEventListener('click',async function(){
+  if(!deferredInstall)return;
+  deferredInstall.prompt();
+  try{await deferredInstall.userChoice;}catch(_){}
+  deferredInstall=null;$('b-inst').hidden=true;
+});
+if('serviceWorker' in navigator&&/^https?:$/.test(location.protocol)){
+  window.addEventListener('load',function(){
+    try{navigator.serviceWorker.register('sw.js').catch(function(){});}catch(_){}
+  });
+}
+
+/* Início */
+applySettings();
+if(!cur()&&data.notes.length)data.current=sorted()[0].id;
+showNote();
+$('count').textContent=data.notes.length+(data.notes.length===1?' nota':' notas');
+setStatus(storageOk?'Salvo':'Sem armazenamento neste navegador. Exporte suas notas para não perdê-las.');
+if(storageOk)write();
+window.addEventListener('resize',fit);
+})();
+</script>
+
+</body>
+</html>
